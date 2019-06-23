@@ -1,0 +1,62 @@
+参考：
+CentOS7.4安装配置PostgreSQL  https://www.jianshu.com/p/935168d54d9c
+
+测试时安装的版本未10.7版本
+
+1.添加RPM
+yum install https://download.postgresql.org/pub/repos/yum/10/redhat/rhel-7-x86_64/pgdg-centos10-10-2.noarch.rpm
+
+2.安装PostgreSQL
+yum install postgresql10 postgresql10-server
+
+3.初始化数据库并设置开机自启动
+/usr/pgsql-10/bin/postgresql-10-setup initdb
+systemctl enable postgresql-10
+systemctl start postgresql-10
+
+4.修改默认PostgreSQL用户密码(前面步骤已创建postgres用户)
+//切换用户
+su  postgres
+
+//登录数据库
+psql -U postgres
+
+//修改默认用户的密码（不要漏了“;”）
+ALTER USER postgres with encrypted password '123456';
+
+//退出数据库
+\q
+
+//退出用户
+exit
+5.配置远程访问
+注意:我用的百度云服务器，使用的是安全组，可以忽略禁用SELinux和配置防火墙两个步骤
+//禁用SELinux
+vi /etc/selinux/config
+SELINUX=disabled  //将其他项注释掉，添加这一行
+
+//配置防火墙
+firewall-cmd --set-default-zone=trusted
+firewall-cmd --permanent --add-port=5432/tcp
+firewall-cmd --reload
+
+//允许数据库远程连接
+vi /var/lib/pgsql/10/data/postgresql.conf
+将#listen_addresses = 'localhost'  为  listen_addresses='*'
+
+//信任远程连接
+vi /var/lib/pgsql/10/data/pg_hba.conf
+//在“IPv4 local connections”下方添加允许连接的IP。 
+//如果想允许所有IPv4地址，则加入一行“host all all 0.0.0.0/0 md5”。IPv6方法类似。
+
+重启服务,使用改的配置生效(root用户操作)
+查找到对应的服务：systemctl
+systemctl start postgresql-10.service
+systemctl stop postgresql-10.service
+systemctl restart postgresql-10.service
+
+6.远程测试
+测试ok
+
+
+

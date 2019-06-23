@@ -1,0 +1,134 @@
+官网：http://www.dba86.com/docs/postgresql/10.3/install-procedure.html
+
+参考：
+PostgreSQL 10.3数据库主从复制
+https://www.cnblogs.com/aegis1019/p/8870251.html
+ 
+POSTGRESQL10.3源码安装主从搭建（完善版）内附第6点关于gprof目录无限增长问题
+https://blog.csdn.net/germany15914326114/article/details/81196778
+
+复制模式选择推荐的高可用方式（异步流复制模式）实现数据库高可用
+HA环境搭建：
+Master：106.13.118.175
+Standby：150.109.97.104
+
+1.Master库
+授权：
+chown -R postgres:postgres /usr/local/pgsql/
+
+1.1 登陆Master库，创建具有用于传递数据的具有replication权限的用户（也可以直接用Super user当作replication用户，但不推荐）
+$ /usr/local/pgsql/bin/psql -U postgres -d postgres
+postgres=# CREATE ROLE replicator login replication password '123456';
+
+CREATE ROLE
+
+1.2 Master库网络策略(和安装时的信任远程连接步骤一样，只是注意把IPV6的也加上)
+修改Master库的pg_hba.conf，把Master库和Standby库的IP地址添加进Master库网络策略白名单中，使Standby库可以连上Master库，同时便于主备切换。
+vi /usr/local/pgsql/data/pg_hba.conf
+//在“IPv4 local connections”下方添加允许连接的IP。 
+//如果想允许所有IPv4地址，则加入一行“host all all 0.0.0.0/0 md5”。IPv6方法类似。
+
+IPV6后面额外添加的。把Master库和Standby库的IP地址添加进Master库网络策略白名单中，使Standby库可以连上Master库，同时便于主备切换。
+host    replication     replicator      106.13.118.175/32            md5
+host    replication     replicator      150.109.97.104/32            md5
+
+1.3 Master库数据库配置
+修改Master库的配置文件postgresql.conf，在原配置文件postgresql.conf的基础上修改,修改内容如下
+$ cd /usr/local/pgsql/data
+$ mkdir arch_dir
+$ mkdir arch_dir_master
+$ vi postgresql.conf
+
+wal_level = logical
+max_wal_senders = 10 # at least the number of standby
+archive_mode = on
+archive_command = 'test ! -f /usr/local/pgsql/data/arch_dir/%f && cp %p /usr/local/pgsql/data/arch_dir/%f'
+synchronous_standby_names = '' #standby application name, in recover.conf
+hot_standby=on
+
+1.4 创建主库切从库的配置
+创建切换为Standby库时的同步配置文件recovery.done
+$ cd /usr/local/pgsql/data
+$ vi recovery.done
+
+standby_mode=on
+restore_command = 'cp /usr/local/pgsql/data/arch_dir_master/%f %p'
+primary_conninfo='application_name=pg2 host=150.109.97.104 port=5432 user=replicator password=123456'
+archive_cleanup_command ='pg_archivecleanup /usr/local/pgsql/data/arch_dir_master %r'
+recovery_target_timeline = 'latest'
+
+1.5 重启数据库
+$ su postgres
+$ /usr/local/pgsql/bin/pg_ctl restart -D /usr/local/pgsql/data/ -l /usr/local/pgsql/data/pglog.log
+
+2 Standby库
+授权：
+chown -R postgres:postgres /usr/local/pgsql/
+
+状态：仅安装好数据库软件，没有启动数据库。
+2.1 创建Standby数据库
+使用主库的热备创建standby库
+$ /usr/local/pgsql/bin/psql -h 106.13.118.175 -p 5432 -U postgres -d postgres
+输入postgres密码
+postgres=# select pg_start_Backup('backuptag',true);
+
+复制主库数据目录,postgres用户注意使用passwd postgres设置密码，我设置为和root一样的密码
+删除从库的data目录
+rm -rf /usr/local/pgsql/data/
+$ scp -r postgres@106.13.118.175:/usr/local/pgsql/data /usr/local/pgsql/data
+
+停止主库的热备锁定
+$ psql -h 106.13.118.175 -p 5432 -U postgres -d postgres
+postgres=# select pg_stop_backup();
+
+2.2 清理复制过来的主库文件
+$ rm -rf /usr/local/pgsql/data/pg_wal
+$ rm -rf /usr/local/pgsql/data/postmaster.pid
+$ rm -rf /usr/local/pgsql/data/arch_dir/*
+
+2.3 修改备库的recovery文件
+$ cd /usr/local/pgsql/data
+$ mv recovery.done recovery.conf
+$ vi recovery.conf
+standby_mode=on
+restore_command = 'cp /usr/local/pgsql/data/arch_dir_master/%f %p'
+primary_conninfo='application_name=pg3 host=106.13.118.175 port=5432 user=replicator password=123456'
+archive_cleanup_command ='pg_archivecleanup /usr/local/pgsql/data/arch_dir_master %r'
+recovery_target_timeline = 'latest'
+
+2.4 准备恢复需要的完整的归档文件和wal文件
+$ scp -r postgres@106.13.118.175:/usr/local/pgsql/data/pg_wal /usr/local/pgsql/data/
+$ scp -r 106.13.118.175:/usr/local/pgsql/data/arch_dir /usr/local/pgsql/data/arch_dir_master
+
+2.5 启动备库，观察备库日志
+su postgres
+$ /usr/local/pgsql/bin/pg_ctl restart -D /usr/local/pgsql/data -l /usr/local/pgsql/data/pglog.log
+
+$ less /usr/local/pgsql/data/pglog.log
+
+$ less /usr/local/pgsql/data/log/postgresql-date.log
+
+3.常用命令
+主库备库状态查看
+/usr/local/pgsql/bin/pg_controldata | grep 'Database cluster state'
+
+4.主从切换
+停主库服务
+/usr/local/pgsql/bin/pg_ctl stop -m fast -D /usr/local/pgsql/data
+
+激活备库(备库需要运行状态)
+/usr/local/pgsql/bin/pg_ctl promote -D /usr/local/pgsql/data
+
+原主库修复后，启动作备库
+$ cd /usr/local/pgsql/data
+$ mv recovery.done recovery.conf
+$ vi recovery.conf
+
+standby_mode=on
+restore_command = 'cp /usr/local/pgsql/data/arch_dir_master/%f %p'
+primary_conninfo='application_name=pg2 host=150.109.97.104 port=5432 user=replicator password=123456'
+archive_cleanup_command ='pg_archivecleanup /usr/local/pgsql/data/arch_dir_master %r'
+recovery_target_timeline = 'latest'
+
+保存后启动原主库，此时变为了现备库的状态
+

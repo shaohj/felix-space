@@ -1,0 +1,80 @@
+centos7 源码安装postgresql 10.3
+参考：centos7 源码安装postgresql 10.3
+https://blog.csdn.net/zj910092147/article/details/80181301
+
+编译安装时，可能出现需要安装的依赖,且出现版本冲突的使用yum remove 移除对应的再重装即可，如yum remove zlib.i686
+yum install gcc gcc-c++
+yum install zlib zlib-devel
+yum install make
+
+yum install perl-ExtUtils-Embed perl-ExtUtils-Embed -y
+yum install openssl openssl-devel
+yum install pam pam-devel
+yum install readline readline-devel
+
+1、查看是否安装老版本的pg
+yum list installed | grep postgresql
+
+2、解压源码
+mkdir -p ~/down/pgsql
+cd ~/down/pgsql
+wget https://ftp.postgresql.org/pub/source/v10.3/postgresql-10.3.tar.gz
+tar -xvf postgresql-10.3.tar.gz
+
+3、编译 安装
+mv postgresql-10.3 pgsql
+mv pgsql /usr/local/ 相当于创建了pgsql 文件夹
+cd /usr/local/pgsql
+./configure --prefix=/usr/local/pgsql --without-readline 编译，出现图1结果标时编译成功（以后卸载只要删除pgsql 文件夹就可以了）
+
+make
+make install
+
+4、在root 组中增加postgres 用户
+adduser postgres 
+
+5、mkdir -p /usr/local/pgsql/data  （-p 递归创建文件夹，由于已经创建过pgsql 所以没有-p 也没事）
+
+6、给与 pgsql 文件夹以及所有子文件夹 权限，主要给的是root组postgres用户
+chown -R postgres:root /usr/local/pgsql/
+
+7、查看环境变量是否添加正确
+vim ~/.bash_profile
+export PATH=/usr/local/pgsql/bin:$PATH
+export PGDATA=/usr/local/pgsql/data
+export LD_LIBRARY_PATH=/usr/lib:/usr/local/pgsql/lib:/usr/local/lib
+
+cd ~;
+source .bash_profile
+
+8. 切换到postgres 用户
+su - postgres
+/usr/local/pgsql/bin/initdb -D /usr/local/pgsql/data  初始化数据库
+/usr/local/pgsql/bin/postgres -D /usr/local/pgsql/data >logfile 2>&1 & 设置日志输出位置
+
+9、设置数据库参数
+vim /usr/local/pgsql/data/postgresql.conf
+listen_addresses = '*'
+port = 5432
+
+10、进入数据库设置密码
+/usr/local/pgsql/bin/psql postgres postgres
+ALTER USER postgres with encrypted password '123456';
+退出
+\q
+exit
+
+11、添加启动服务(exit退出后变为了root用户)
+cp -r /usr/local/pgsql/contrib/start-scripts/linux /etc/init.d/postgresql
+chkconfig --add postgresql
+chmod +u+x /etc/init.d/postgresql 给所有者执行权限
+
+12、//信任远程连接
+vi /usr/local/pgsql/data/pg_hba.conf
+//在“IPv4 local connections”下方添加允许连接的IP。 
+//如果想允许所有IPv4地址，则加入一行“host all all 0.0.0.0/0 md5”。IPv6方法类似。
+
+13、服务启动
+service postgresql start
+service postgresql stop
+service postgresql restart
