@@ -401,6 +401,8 @@ IMPALA是CDH的开源组件，ambari默认是未安装的，因此需要手动�
 | Impala | IMPALA.zip | 即ambari-imapla-service资源，ambari安装impala服务使用 |
 | Impala | cdh.zip | 由cdh5.14.0-centos7.tar.gz整理而来，作为本地源离线安装cdh使用 |
 
+[百度网盘下载地址(提取码(n4gq))](https://pan.baidu.com/s/1qTxplfimI67GVFgqaNohfw)
+
 ## 5.2 节点分配
 | 节点 | 组件 | Impala组件 |
 | :-----| ----: | ----: |
