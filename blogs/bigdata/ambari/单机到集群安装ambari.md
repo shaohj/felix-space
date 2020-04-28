@@ -1,5 +1,5 @@
 # 1 单机到集群安装ambari
-ambari单机到集群安装，通过VM虚拟机安装。
+ambari-2.6.0.0单机到集群安装，通过VM虚拟机安装，10G内存安装。
 
 ## 1.1 文档规范
 * 代码块和vi编辑块用灰色区域标记
@@ -349,7 +349,7 @@ $ ambari-server setup --jdbc-db=postgres --jdbc-driver=/var/lib/ambari-server/po
 $ ambari-server setup --jdbc-db=mysql --jdbc-driver=/var/lib/ambari-server/mysql-connector-java-5.1.46.jar
 ~~~
 
-### 4.2.4 启动SERVER
+### 4.2.3 启动SERVER
 ~~~
 $ ambari-server start
 $ tail -f /var/log/ambari-server/ambari-server.log
@@ -358,14 +358,14 @@ $ cat /var/run/ambari-server/ambari-server.pid
 如：http://hdp-master:8080 ，用户名和密码默认都是admin
 ~~~
 
-### 4.2.5 启动AGENT
+### 4.2.4 启动AGENT
 ~~~
 $ ambari-agent start 
 $ cat /run/ambari-agent/ambari-agent.pid
 ~~~
 
 
-### 4.2.6 AMBARI SERVER安装组件
+### 4.2.5 AMBARI SERVER安装组件
 详细步骤略。注意装hive时，选择我们自己安装的mysql库。
 
 登录：http://hdp-master:8080 admin/admin  
