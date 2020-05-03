@@ -1,0 +1,43 @@
+<yandex>
+<clickhouse_remote_servers>
+    <!-- 3分片1备份 -->
+    <ck_clusters>
+        <!-- 数据分片1  -->
+        <shard>
+            <replica>
+                <host>server1</host>
+                <port>9000</port>
+            </replica>
+        </shard>
+        <!-- 数据分片2  -->
+        <shard>
+            <replica>
+                <host>server2</host>
+                <port>9000</port>
+            </replica>
+        </shard>
+        <!-- 数据分片3  -->
+        <shard>
+            <replica>
+                <host>server3</host>
+                <port>9000</port>
+            </replica>
+        </shard>
+    </ck_clusters>
+</clickhouse_remote_servers>
+<zookeeper-servers>
+    <node index="1">
+        <host>server1</host>
+        <port>2181</port>
+    </node>
+    <node index="2">
+        <host>server2</host>
+        <port>2181</port>
+    </node>
+    <node index="3">
+        <host>server3</host>
+        <port>2181</port>
+    </node>
+</zookeeper-servers>
+
+</yandex>
