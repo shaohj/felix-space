@@ -50,13 +50,13 @@ $ hostname
 $ cat /etc/hostname 
 $ hostnamectl status
 master设置主机名：
-$ hostnamectl set-hostname hpd-master
+$ hostnamectl set-hostname hdp-master
 slave设置主机名参考master
 
 
 # 编辑/etc/hosts，配置ip
 vi /etc/hosts
-192.168.37.1  hpd-master
+192.168.37.1  hdp-master
 192.168.37.2  hdp01
 192.168.37.3  hdp02
 ~~~
@@ -83,7 +83,7 @@ $ timedatectl set-time "2019-07-24 17:41:00"
 ~~~
 # 所有节点生成ssh公钥和私钥
 $ ssh-keygen -t rsa   #一路回车到完成
-# 复制每个节点的公钥和私钥到hdp-master节点
+# 复制每个节点的公钥和私钥到hdp-master节点，必须(需要生成authorized_keys文件)
 $ ssh-copy-id -i ~/.ssh/id_rsa.pub root@hdp-master
 #将复制后的公钥分发给所有节点（包括本机，单机版hdp也需做这步操作)，在hdp-master上操作，依次复制到01-05机器
 $ scp ~/.ssh/authorized_keys root@hdp01:~/.ssh/ 
