@@ -366,7 +366,7 @@ $ cat /run/ambari-agent/ambari-agent.pid
 
 
 ### 4.2.5 AMBARI SERVER安装组件
-详细步骤略。注意装hive时，选择我们自己安装的mysql库。
+详细步骤略，截图使用了其他安装的配置，如IP仅供参考，以实际的为准。注意装hive时，选择我们自己安装的mysql库。
 
 登录：http://hdp-master:8080 admin/admin  
 <img alt="login" src="./imgs/login.png" style="zoom:100%" border="1px"/>  
